@@ -341,3 +341,28 @@ describe('10. Backup preserva a nova modalidade', () => {
     expect(after.nextFor(musc.id)?.name).toBe('Upper B')
   })
 })
+
+describe('Reordenar treinos e modalidades (regressão: DataCloneError)', () => {
+  it('mover treino com exercícios para cima/baixo grava no IndexedDB e persiste a ordem', async () => {
+    const { mods, musc } = await setup()
+    const [a, b] = mods.workoutsOf(musc.id)
+    await mods.moveWorkout(b.id, -1)
+    expect(mods.workoutsOf(musc.id).map((w) => w.name).slice(0, 2)).toEqual([b.name, a.name])
+    await mods.moveWorkout(b.id, 1)
+    expect(mods.workoutsOf(musc.id)[0].name).toBe(a.name)
+    await mods.moveWorkout(a.id, 1)
+    const { mods: again } = await reload()
+    expect(again.workoutsOf(musc.id).slice(0, 2).map((w) => w.name)).toEqual([b.name, a.name])
+    expect((await db.workouts.get(a.id))?.exercises).toHaveLength(1)
+  })
+
+  it('mover modalidade grava e persiste', async () => {
+    const { mods, musc, corr } = await setup()
+    const first = mods.sortedModalities.findIndex((m) => m.id === corr.id)
+    await mods.moveModality(corr.id, -1)
+    expect(mods.sortedModalities.findIndex((m) => m.id === corr.id)).toBe(first - 1)
+    const { mods: again } = await reload()
+    expect(again.sortedModalities.findIndex((m) => m.id === corr.id)).toBe(first - 1)
+    expect(musc.id).toBeTruthy()
+  })
+})

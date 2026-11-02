@@ -18,6 +18,9 @@ export const PALETTE = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '
 
 export class ValidationError extends Error {}
 
+/** Cópia sem proxies do Vue: o IndexedDB (structured clone) não grava objetos reativos. */
+const plain = <T,>(v: T): T => JSON.parse(JSON.stringify(v))
+
 export function newExercise(partial: Partial<Exercise> = {}): Exercise {
   return { id: uid(), name: '', sets: 3, reps: '10', load: null, unit: 'kg', notes: '', ...partial }
 }
@@ -60,7 +63,7 @@ export const useModalitiesStore = defineStore('modalities', () => {
       active: input.active ?? existing?.active ?? true,
       createdAt: existing?.createdAt ?? Date.now()
     }
-    await db.modalities.put(m)
+    await db.modalities.put(plain(m))
     const i = modalities.value.findIndex((x) => x.id === m.id)
     if (i >= 0) modalities.value[i] = m
     else modalities.value.push(m)
@@ -78,7 +81,7 @@ export const useModalitiesStore = defineStore('modalities', () => {
       { ...a, order: b.order },
       { ...b, order: a.order }
     ]
-    await db.modalities.bulkPut(updated)
+    await db.modalities.bulkPut(plain(updated))
     for (const u of updated) modalities.value[modalities.value.findIndex((m) => m.id === u.id)] = u
   }
 
@@ -158,7 +161,7 @@ export const useModalitiesStore = defineStore('modalities', () => {
       { ...a, position: b.position },
       { ...b, position: a.position }
     ]
-    await db.workouts.bulkPut(updated)
+    await db.workouts.bulkPut(plain(updated))
     for (const u of updated) workouts.value[workouts.value.findIndex((x) => x.id === u.id)] = u
   }
 
